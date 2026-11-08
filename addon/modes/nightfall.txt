@@ -1,0 +1,12 @@
+"nightfall"
+{
+	"base"			"coop"
+	"maxplayers"		"4"
+	"hasdifficulty"		"1"
+
+	"DisplayTitle"		"Nightfall"
+	"ShortDescription"	"Nightreign-style roguelite co-op"
+	"Description"		"Hero classes with skills and ultimates. Runes and levels. A Tide that devours the map behind you. Downed allies are roused by striking them. Every finale is a Nightlord."
+	"Image"			"maps/any"
+	"Author"		"rockdekoning"
+}
