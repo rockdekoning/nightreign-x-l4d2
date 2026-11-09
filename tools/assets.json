@@ -1,0 +1,40 @@
+{
+  "_readme": [
+    "Which Nightreign model becomes which L4D2 role.",
+    "'source' lists files relative to your UNPACKED Nightreign game folder, e.g. \"chr/c1234.chrbnd.dcx\",",
+    "or several part files (body/head/arms/legs) that get merged into one model.",
+    "You can also point at an .fbx you exported yourself (Smithbox / FLVER editor).",
+    "Leave 'source' empty to keep the vanilla L4D2 model for that role.",
+    "Run 'python tools/melt.py scan' to list candidate files, and identify them in Smithbox's model viewer.",
+    "'reference' is the L4D2 model whose skeleton, animations and hitboxes the converted model inherits.",
+    "'rig': humanoid = auto-fit the mesh onto the L4D2 skeleton (best for people);",
+    "       bone_map = only rename bones using 'bone_map' (for creatures you mapped by hand);",
+    "       rigid    = glue the whole mesh to one bone (statue-like, last resort)."
+  ],
+
+  "roles": {
+    "hero_vanguard":    { "source": [], "reference": "survivors/survivor_gambler.mdl",  "rig": "humanoid", "scale": 1.0 },
+    "hero_bulwark":     { "source": [], "reference": "survivors/survivor_coach.mdl",    "rig": "humanoid", "scale": 1.0 },
+    "hero_hawkeye":     { "source": [], "reference": "survivors/survivor_mechanic.mdl", "rig": "humanoid", "scale": 1.0 },
+    "hero_shade":       { "source": [], "reference": "survivors/survivor_producer.mdl", "rig": "humanoid", "scale": 1.0 },
+    "hero_berserker":   { "source": [], "reference": "survivors/survivor_coach.mdl",    "rig": "humanoid", "scale": 1.0 },
+    "hero_weaver":      { "source": [], "reference": "survivors/survivor_producer.mdl", "rig": "humanoid", "scale": 1.0 },
+    "hero_ronin":       { "source": [], "reference": "survivors/survivor_gambler.mdl",  "rig": "humanoid", "scale": 1.0 },
+    "hero_gravecaller": { "source": [], "reference": "survivors/survivor_producer.mdl", "rig": "humanoid", "scale": 1.0 },
+
+    "nightlord":        { "source": [], "reference": "infected/hulk.mdl",    "rig": "humanoid", "scale": 1.0 },
+    "field_boss":       { "source": [], "reference": "infected/hulk.mdl",    "rig": "humanoid", "scale": 1.0 },
+    "tank":             { "source": [], "reference": "infected/hulk.mdl",    "rig": "humanoid", "scale": 1.0 },
+    "witch":            { "source": [], "reference": "infected/witch.mdl",   "rig": "humanoid", "scale": 1.0 },
+
+    "special_smoker":   { "source": [], "reference": "infected/smoker.mdl",  "rig": "humanoid", "scale": 1.0 },
+    "special_boomer":   { "source": [], "reference": "infected/boomer.mdl",  "rig": "humanoid", "scale": 1.0 },
+    "special_hunter":   { "source": [], "reference": "infected/hunter.mdl",  "rig": "humanoid", "scale": 1.0 },
+    "special_spitter":  { "source": [], "reference": "infected/spitter.mdl", "rig": "humanoid", "scale": 1.0 },
+    "special_jockey":   { "source": [], "reference": "infected/jockey.mdl",  "rig": "humanoid", "scale": 1.0 },
+    "special_charger":  { "source": [], "reference": "infected/charger.mdl", "rig": "humanoid", "scale": 1.0 },
+
+    "commons":          { "source": [], "reference": "infected/common_male_tshirt_cargos.mdl", "rig": "humanoid", "scale": 1.0,
+                          "_note": "Each source file becomes one common variant. Off by default in-game until at least one converts." }
+  }
+}

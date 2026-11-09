@@ -1,0 +1,16 @@
+{
+  "_readme": "Copy this file to tools/melt_config.json and fill in the paths for your PC. melt_config.json is git-ignored.",
+
+  "nightreign_unpacked": "C:/Games/NightreignUnpacked",
+  "l4d2_dir": "C:/Program Files (x86)/Steam/steamapps/common/Left 4 Dead 2",
+
+  "witchybnd": "C:/Tools/WitchyBND/WitchyBND.exe",
+  "witchybnd_args": ["-p"],
+  "blender": "C:/Program Files/Blender Foundation/Blender 4.2/blender.exe",
+  "flver_import_operator": "import_scene.flver",
+  "texconv": "C:/Tools/texconv.exe",
+  "vtfcmd": "C:/Tools/VTFEdit/VTFCmd.exe",
+
+  "reference_dir": "tools/work/reference",
+  "install_main_mod": true
+}

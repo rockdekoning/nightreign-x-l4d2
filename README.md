@@ -6,12 +6,26 @@ Nightreign expedition. You get hero classes with a passive, a skill and an ultim
 runes, and you level up at a Site of Grace. A Tide swallows the map behind you. You rouse
 downed allies by hitting them, and a **Nightlord** waits at every finale.
 
-It is a pure **VScript mutation**: no custom models, sounds or maps. It runs on every official
-campaign and on most custom campaigns too.
+The mashup has two halves:
+
+1. **The mod** (`addon/`) carries all the gameplay. It's a VScript mutation that runs on every
+   official campaign and most custom ones, and it works on its own with vanilla L4D2 models.
+2. **The melt** (`MELT.bat` + `tools/`) is a Melty-style "bring your own game" converter. It reads
+   character and enemy models from **your own Nightreign install**, converts them into L4D2
+   models on your PC, and installs them as a second addon. When the mod loads, it detects that
+   addon automatically: survivors wear their class's hero, the finale Tank becomes the Nightlord,
+   and enemies take on Nightreign models. **No Nightreign files are stored in this repo**, and
+   Nightreign never has to be running. See **[docs/MELTING.md](docs/MELTING.md)**.
 
 ---
 
 ## Install & play
+
+**One click (recommended):** set up the tools in [docs/MELTING.md](docs/MELTING.md), then run
+`MELT.bat`. It converts your Nightreign assets and installs both addons. Even with no models
+selected yet, it still packs and installs the mod.
+
+**Mod only (vanilla models):**
 
 1. Copy the `addon/` folder into your game as
    `Left 4 Dead 2/left4dead2/addons/nightfall/`
@@ -98,7 +112,16 @@ addon/
         ├── nf_progression.nut             # runes, levels, flasks, rarity, rousing, persistence
         ├── nf_night.nut                   # Tide, Omens, raids, elites, field bosses, Nightlord
         ├── nf_hud.nut                     # party/Tide/boss HUD
+        ├── nf_assets.nut                  # detects the melted asset pack and swaps models
         └── nf_core.nut                    # think loop, input, damage pipeline, chat, bot AI
+
+MELT.bat                                   # one-click: check tools, convert, install
+docs/MELTING.md                            # setup guide for the asset converter
+tools/
+├── melt.py                                # converter: unpack -> Blender -> textures -> studiomdl -> VPK
+├── blender/flver_to_smd.py                # fits Nightreign meshes onto L4D2 skeletons
+├── assets.json                            # which Nightreign model becomes which L4D2 role
+└── melt_config.example.json               # tool paths (copy to melt_config.json)
 ```
 
 Tuning: `NF.Config.TideMinutes` in `nightfall.nut`. Class numbers live in each class table in
@@ -106,6 +129,10 @@ Tuning: `NF.Config.TideMinutes` in `nightfall.nut`. Class numbers live in each c
 
 ## Status / known caveats
 
+- **The asset converter hasn't been run against real game files yet.** It was written without
+  access to Windows, Nightreign or the Source SDK tools. The repo-side logic is unit-tested, but
+  the Blender, WitchyBND and studiomdl stages will need a shakedown on a real PC. Check
+  `tools/work/melt.log` when a role fails.
 - **Not playtested in-game yet.** It was written against the documented L4D2 VScript API, but I
   had no way to run L4D2 while building it. If something breaks, open the console and look for
   lines starting with `[Nightfall]`. Script errors also show up there.

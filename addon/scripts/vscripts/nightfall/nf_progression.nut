@@ -46,6 +46,7 @@
 		p.SetHealth(hp);
 	}
 	st.lastSpeed = -1.0;
+	NF.ApplyHeroModel(p);
 }
 
 ::NF.UpdateSpeed <- function(p, st)

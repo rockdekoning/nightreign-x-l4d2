@@ -218,7 +218,11 @@
 {
 	local zt = p.GetZombieType();
 	if (zt == 8) return; // handled by tank_spawn
-	if (NF.PendingElites > 0)
+	if (NF.PendingElites <= 0)
+	{
+		NF.After(0.1, function() { if (NF.Alive(p)) NF.ApplySpecialModel(p, false); });
+	}
+	else
 	{
 		NF.PendingElites--;
 		NF.After(0.2, function() {
@@ -226,6 +230,7 @@
 			local hp = p.GetMaxHealth() * (3 + NF.Day);
 			p.SetMaxHealth(hp);
 			p.SetHealth(hp);
+			NF.ApplySpecialModel(p, true);
 			NF.SetGlow(p, 255, 200, 40);
 			NF.Bosses[p.GetEntityIndex()] <- { kind = "elite", name = "Elite", phase = 1 };
 		});
@@ -262,6 +267,7 @@
 		p.SetMaxHealth(hp);
 		p.SetHealth(hp);
 		NF.Bosses[p.GetEntityIndex()] <- { kind = kind, name = name, phase = 1, maxhp = hp };
+		NF.ApplyTankModel(p, kind);
 		if (kind == "nightlord")
 		{
 			NF.SetGlow(p, 170, 60, 255);

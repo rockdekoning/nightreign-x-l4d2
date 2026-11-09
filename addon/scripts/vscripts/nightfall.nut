@@ -14,6 +14,7 @@ IncludeScript("nightfall/nf_classes");
 IncludeScript("nightfall/nf_progression");
 IncludeScript("nightfall/nf_night");
 IncludeScript("nightfall/nf_hud");
+IncludeScript("nightfall/nf_assets");
 IncludeScript("nightfall/nf_core");
 
 //-----------------------------------------------------------------------------
@@ -95,5 +96,8 @@ function OnGameEvent_item_pickup(params)            { ::NF.Ev_item_pickup(params
 function OnGameEvent_finale_start(params)           { ::NF.Ev_finale_start(params); }
 function OnGameEvent_map_transition(params)         { ::NF.Ev_map_transition(params); }
 function OnGameEvent_finale_vehicle_leaving(params) { ::NF.Ev_finale_vehicle_leaving(params); }
+function OnGameEvent_witch_spawn(params)            { ::NF.Ev_witch_spawn(params); }
+
+::NF.LoadAssets();
 
 __CollectGameEventCallbacks(this);

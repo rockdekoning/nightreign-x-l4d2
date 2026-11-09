@@ -79,6 +79,7 @@
 	{
 		NF.LastBotTick = now;
 		NF.BotThink();
+		NF.UpdateCommonModels();
 	}
 	NF.UpdateTide();
 	NF.UpdateHUD();
@@ -500,4 +501,10 @@
 ::NF.Ev_finale_vehicle_leaving <- function(params)
 {
 	NF.Say("\x04Dawn breaks.\x01 The expedition survives the Long Night.");
+}
+
+::NF.Ev_witch_spawn <- function(params)
+{
+	local w = ("witchid" in params) ? EntIndexToHScript(params.witchid) : null;
+	if (NF.Valid(w)) NF.After(0.1, function() { if (NF.Valid(w)) NF.ApplyWitchModel(w); });
 }

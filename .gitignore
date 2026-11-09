@@ -1,0 +1,18 @@
+# Converted / extracted game files must never be committed.
+tools/work/
+tools/melt_config.json
+*.vpk
+*.dcx
+*.flver
+*.tpf
+*.dds
+*.vtf
+*.mdl
+*.vvd
+*.vtx
+*.phy
+*.smd
+*.fbx
+*.wem
+*.bnk
+__pycache__/
