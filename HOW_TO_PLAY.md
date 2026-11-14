@@ -69,6 +69,23 @@ Want a different campaign? Swap the map name:
 | Dodge | **tap Ctrl twice** |
 | Revive a downed friend | **Shove or hit them** (yes, really) |
 
+The camera is **third person** by default. Type `!1p` in chat for first person and `!3p` to go
+back.
+
+When an ability works you'll know: its name appears in the middle of the screen, the screen
+flashes and a sound plays. If you only see "Skill ready in 5s" or "Ultimate 40%", it isn't ready.
+
+**Want your own keys?** Open the console (`~`) and type any of these once. Change `q`, `f`, `h`,
+`c` to whatever keys you like:
+
+```
+bind q "scripted_user_func skill"
+bind f "scripted_user_func ult"
+bind h "scripted_user_func flask"
+bind c "scripted_user_func dodge"
+bind v "scripted_user_func camera"
+```
+
 Type these in chat (press **Y**):
 
 | Type | What it does |
@@ -79,6 +96,7 @@ Type these in chat (press **Y**):
 | `!levelup` | spends your runes on levels (only in the saferoom) |
 | `!stats` | shows your level and runes |
 | `!tide off` | turns off the Tide if it's too hard |
+| `!3p` / `!1p` | third-person / first-person camera |
 
 **The one rule:** keep moving forward. The **Tide** follows you through the map and hurts
 anyone it catches.
@@ -93,7 +111,8 @@ anyone it catches.
 | "map not found" or nothing loads | Check the spelling. It's `c1m1_hotel` (letter c, number 1, letter m, number 1). |
 | The map loads but it's normal L4D2 (no green [Nightfall] messages) | The mod isn't installed. Close the game, run `INSTALL_MOD.bat` again, and make sure it says DONE. Then restart the game. |
 | `INSTALL_MOD.bat` says it can't find the "addon" folder | You ran it from inside the ZIP. Extract the ZIP first (Part 1, step 2). |
-| The Shift keys don't do anything | Your walk key isn't Shift. Use the chat instead: `!skill`, `!ult`, `!flask`. |
+| The Shift keys don't do anything | Your walk key isn't Shift. Set your own keys with the `bind` lines above, or use the chat: `!skill`, `!ult`, `!flask`. |
+| It's hard to aim in third person | Type `!1p` in chat. |
 | Red error text in the console | Take a screenshot of it and send it to whoever gave you the mod. |
 
 To uninstall, delete `nightfall.vpk` from

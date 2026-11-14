@@ -302,6 +302,11 @@
 ::NF.AoE <- function(attacker, pos, radius, dmgCommon, dmgSpecial, stagger, dmgType)
 {
 	local hits = 0;
+	if (radius >= 150)
+	{
+		NF.BlastFX(pos + Vector(0, 0, 16));
+		NF.Shake(pos, 10, 0.6, radius * 2);
+	}
 	NF.AbilityDamageActive = true;
 	foreach (e in NF.EnemiesInRadius(pos, radius))
 	{
@@ -366,6 +371,7 @@
 		lastSpeed = -1.0
 		familiarNext = 0.0
 		behindSince = 0.0
+		thirdPerson = null      // null = not chosen yet, use NF.Config.ThirdPerson
 	};
 }
 

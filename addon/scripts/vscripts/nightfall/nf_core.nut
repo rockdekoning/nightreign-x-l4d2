@@ -26,6 +26,7 @@
 		NF.AutoAssignClasses();
 		foreach (s in NF.AllSurvivors())
 		{
+			NF.PrecacheSounds(s);
 			local st = NF.State(s);
 			st.flask = NF.MaxFlasks(st);
 			st.downs = 0;
@@ -126,6 +127,7 @@
 	foreach (s in NF.Survivors())
 		if (!s.IsIncapacitated()) NF.UltGain(s, 0.4);
 
+	NF.UpdateThirdPerson();
 	NF.DecayRevive();
 	NF.CheckStains();
 	NF.CheckRaids();
@@ -217,9 +219,14 @@
 	if (now < st.skillReadyAt)
 	{
 		NF.Center(p, "Skill ready in " + ((st.skillReadyAt - now).tointeger() + 1) + "s");
+		NF.PlayTo(p, "denied");
 		return;
 	}
-	if (c.Skill(p, st)) st.skillReadyAt = now + c.skillCD;
+	if (c.Skill(p, st))
+	{
+		st.skillReadyAt = now + c.skillCD;
+		NF.OnSkillUsed(p, c);
+	}
 }
 
 ::NF.TryUlt <- function(p, st)
@@ -229,9 +236,14 @@
 	if (st.ult < 100)
 	{
 		NF.Center(p, "Ultimate " + st.ult.tointeger() + "%");
+		NF.PlayTo(p, "denied");
 		return;
 	}
-	if (c.Ult(p, st)) st.ult = 0.0;
+	if (c.Ult(p, st))
+	{
+		st.ult = 0.0;
+		NF.OnUltUsed(p, c);
+	}
 }
 
 ::NF.TryDodge <- function(p, st)
@@ -247,6 +259,7 @@
 	NF.Impulse(p, Vector(dir.x * 480, dir.y * 480, 170));
 	NF.Invuln(p, shade ? 0.7 : 0.4);
 	st.dodgeReadyAt = now + (shade ? 0.7 : 1.4);
+	NF.PlayTo(p, "dodge");
 }
 
 //-----------------------------------------------------------------------------
@@ -339,7 +352,8 @@
 		case "help":
 			NF.Tell(speaker, "{l}WALK+SHOVE{d} skill | {l}WALK+USE{d} ultimate | {l}WALK+RELOAD{d} flask | {l}double-tap CROUCH{d} dodge");
 			NF.Tell(speaker, "{l}Shove / hit a downed ally{d} to rouse them. Outrun the {o}Tide{d}. Kill to earn runes.");
-			NF.Tell(speaker, "Commands: !class [name], !classes, !levelup, !stats, !skill, !ult, !flask");
+			NF.Tell(speaker, "Commands: !class [name], !classes, !levelup, !stats, !skill, !ult, !flask, !3p, !1p");
+			NF.Tell(speaker, "Own keys: in the console type {l}bind q \"scripted_user_func skill\"{d} (also: ult, flask, dodge, camera)");
 			return false;
 
 		case "classes":
@@ -389,6 +403,20 @@
 		case "ult":   NF.TryUlt(speaker, st); return false;
 		case "flask": NF.DrinkFlask(speaker); return false;
 
+		case "3p":
+		case "third":
+		case "thirdperson":
+			NF.SetThirdPerson(speaker, true);
+			NF.Tell(speaker, "Third-person camera {o}on{d}. Type {l}!1p{d} for first person.");
+			return false;
+
+		case "1p":
+		case "first":
+		case "firstperson":
+			NF.SetThirdPerson(speaker, false);
+			NF.Tell(speaker, "First-person camera {o}on{d}. Type {l}!3p{d} for third person.");
+			return false;
+
 		case "tide":
 			if (args.len() >= 2 && (args[1] == "off" || args[1] == "on"))
 			{
@@ -435,7 +463,7 @@
 		}
 		if (st.ult >= 100 && (near.len() >= 10 || tankNear || (downedNear && st.cls == "bulwark")))
 		{
-			if (c.Ult(s, st)) st.ult = 0.0;
+			if (c.Ult(s, st)) { st.ult = 0.0; NF.OnUltUsed(s, c); }
 		}
 		if (s.GetHealth() < s.GetMaxHealth() * 0.35) NF.DrinkFlask(s);
 	}

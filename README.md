@@ -54,7 +54,11 @@ other tools are needed.
 | Dodge roll (i-frames) | **double-tap CROUCH** | — |
 | Rouse a downed ally | **Shove / melee / shoot them** | — |
 
-Chat commands: `!nfhelp`, `!classes`, `!class <name>`, `!levelup`, `!stats`, `!tide on|off`.
+Chat commands: `!nfhelp`, `!classes`, `!class <name>`, `!levelup`, `!stats`, `!tide on|off`, `!3p`, `!1p`.
+
+The camera starts in third person (`NF.Config.ThirdPerson` in `nightfall.nut`). To use your own
+keys, bind them in the console, for example `bind q "scripted_user_func skill"`. The same works
+for `ult`, `flask`, `dodge` and `camera`.
 
 ---
 
@@ -117,6 +121,7 @@ addon/
         ├── nf_night.nut                   # Tide, Omens, raids, elites, field bosses, Nightlord
         ├── nf_hud.nut                     # party/Tide/boss HUD
         ├── nf_assets.nut                  # detects the melted asset pack and swaps models
+        ├── nf_fx.nut                      # third-person camera, ability feedback, key binds
         └── nf_core.nut                    # think loop, input, damage pipeline, chat, bot AI
 
 INSTALL_MOD.bat                            # one-click: install just the mod

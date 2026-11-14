@@ -120,6 +120,8 @@
 	NF.ApplyStats(p, true);
 	st.flask = NF.MaxFlasks(st);
 	NF.Say(p.GetPlayerName() + " rests at Grace and reaches {o}level " + st.level + "{d}.");
+	NF.PlayTo(p, "levelup");
+	NF.Flash(p, 255, 215, 90, 90, 0.8);
 }
 
 //-----------------------------------------------------------------------------
@@ -141,6 +143,8 @@
 	// Drinking cleanses the bleed-out "temporary health" state
 	try { NetProps.SetPropInt(p, "m_isGoingToDie", 0); } catch (e) {}
 	NF.Center(p, "Flask: " + st.flask + " left");
+	NF.PlayTo(p, "flask");
+	NF.Flash(p, 255, 60, 60, 70, 0.5);
 }
 
 //-----------------------------------------------------------------------------

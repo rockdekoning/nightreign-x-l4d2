@@ -15,6 +15,7 @@ IncludeScript("nightfall/nf_progression");
 IncludeScript("nightfall/nf_night");
 IncludeScript("nightfall/nf_hud");
 IncludeScript("nightfall/nf_assets");
+IncludeScript("nightfall/nf_fx");
 IncludeScript("nightfall/nf_core");
 
 //-----------------------------------------------------------------------------
@@ -25,6 +26,8 @@ IncludeScript("nightfall/nf_core");
 	TideMinutes = 10.0
 	// The Tide never advances past this much of the map, keeping the exit saferoom safe.
 	TideMaxPercent = 90.0
+	// Start everyone in the third-person camera. Players switch with !1p / !3p.
+	ThirdPerson = true
 }
 
 //-----------------------------------------------------------------------------
@@ -76,6 +79,12 @@ function OnGameplayStart()
 function AllowTakeDamage(damageTable)
 {
 	return ::NF.OnTakeDamage(damageTable);
+}
+
+// Console: scripted_user_func skill   (so players can bind their own keys)
+function UserConsoleCommand(player, arg)
+{
+	::NF.OnUserCommand(player, arg);
 }
 
 function InterceptChat(message, speaker)

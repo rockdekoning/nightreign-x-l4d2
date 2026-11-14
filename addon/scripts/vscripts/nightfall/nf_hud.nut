@@ -10,6 +10,7 @@
 		p2    = { slot = HUD_SCORE_2,  dataval = "", flags = HUD_FLAG_ALIGN_LEFT }
 		p3    = { slot = HUD_SCORE_3,  dataval = "", flags = HUD_FLAG_ALIGN_LEFT }
 		p4    = { slot = HUD_SCORE_4,  dataval = "", flags = HUD_FLAG_ALIGN_LEFT }
+		keys  = { slot = HUD_LEFT_BOT, dataval = "Shift+RMB skill | Shift+E ultimate | Shift+R flask | 2x Ctrl dodge | !nfhelp", flags = HUD_FLAG_ALIGN_LEFT | HUD_FLAG_NOBG }
 	}
 }
 
@@ -26,6 +27,7 @@
 	HUDPlace(F.p2.slot, 0.005, 0.34, 0.42, 0.035);
 	HUDPlace(F.p3.slot, 0.005, 0.38, 0.42, 0.035);
 	HUDPlace(F.p4.slot, 0.005, 0.42, 0.42, 0.035);
+	HUDPlace(F.keys.slot, 0.005, 0.46, 0.60, 0.035);
 }
 
 ::NF.BossLine <- function()
