@@ -111,9 +111,10 @@
 		NF.LastBotTick = now;
 		NF.BotThink();
 		NF.UpdateCommonModels();
+		// The HUD text doesn't need 10 updates a second; twice is plenty and much cheaper
+		NF.UpdateHUD();
 	}
 	NF.UpdateTide();
-	NF.UpdateHUD();
 }
 
 // Every second
