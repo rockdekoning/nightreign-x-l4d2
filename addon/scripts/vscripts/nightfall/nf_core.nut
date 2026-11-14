@@ -17,7 +17,9 @@
 	// Hold-to-revive still exists, but it is slow: striking your allies is the way.
 	try { Convars.SetValue("survivor_revive_duration", 8); } catch (e) {}
 
-	NF.SetupHUD();
+	// A HUD problem must never stop the rest of the mod from starting
+	try { NF.SetupHUD(); }
+	catch (e) { printl("[Nightfall] HUD setup failed: " + e); }
 	NF.StartThink();
 
 	NF.After(1.0, function() {

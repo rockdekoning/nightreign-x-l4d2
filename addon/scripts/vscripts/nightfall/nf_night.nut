@@ -72,6 +72,7 @@
 	{
 		// Undo the previous omen's director changes first (a restart rolls a new omen)
 		local root = getroottable();
+		local SessionOptions = ("SessionOptions" in root) ? root.SessionOptions : g_ModeScript.SessionOptions;
 		if ("NF_OmenRestore" in root)
 		{
 			foreach (k, v in root.NF_OmenRestore)

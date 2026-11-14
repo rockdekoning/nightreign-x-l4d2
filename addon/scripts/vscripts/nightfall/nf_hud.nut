@@ -13,15 +13,19 @@
 	}
 }
 
+// The HUD_* constants belong to the mode script's scope, which is only visible while this
+// file is being included. Functions run later with NF as their scope, so read the slot
+// numbers back out of the layout table instead of naming the constants again.
 ::NF.SetupHUD <- function()
 {
+	local F = NF.HUD.Fields;
 	HUDSetLayout(NF.HUD);
-	HUDPlace(HUD_MID_TOP, 0.30, 0.01, 0.40, 0.04);
-	HUDPlace(HUD_MID_BOT, 0.30, 0.05, 0.40, 0.035);
-	HUDPlace(HUD_SCORE_1, 0.005, 0.30, 0.42, 0.035);
-	HUDPlace(HUD_SCORE_2, 0.005, 0.34, 0.42, 0.035);
-	HUDPlace(HUD_SCORE_3, 0.005, 0.38, 0.42, 0.035);
-	HUDPlace(HUD_SCORE_4, 0.005, 0.42, 0.42, 0.035);
+	HUDPlace(F.night.slot, 0.30, 0.01, 0.40, 0.04);
+	HUDPlace(F.tide.slot, 0.30, 0.05, 0.40, 0.035);
+	HUDPlace(F.p1.slot, 0.005, 0.30, 0.42, 0.035);
+	HUDPlace(F.p2.slot, 0.005, 0.34, 0.42, 0.035);
+	HUDPlace(F.p3.slot, 0.005, 0.38, 0.42, 0.035);
+	HUDPlace(F.p4.slot, 0.005, 0.42, 0.42, 0.035);
 }
 
 ::NF.BossLine <- function()
