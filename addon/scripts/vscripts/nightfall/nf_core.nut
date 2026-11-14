@@ -65,6 +65,8 @@
 	NF.LastBotTick <- 0.0;
 	NF.WeaponRarity <- {};
 	NF.SeenCommons <- {};
+	NF.Humans <- [];
+	NF.SeenErrors <- {};
 	NF.Tide <- { active = false, paused = false, disabled = false, startTime = 0.0, pct = -15.0, lastTick = 0.0 };
 	NF.Raids <- { r1 = false, r2 = false, boss = false };
 }
@@ -78,10 +80,44 @@
 	scope.NFThink <- function()
 	{
 		try { ::NF.Think(); }
-		catch (e) { printl("[Nightfall] think error: " + e); }
+		catch (e) { ::NF.ReportError("think", e); }
 		return 0.1;
 	}
 	AddThinkToEnt(ent, "NFThink");
+
+	// Key presses are read on their own, much faster think. A mouse click or a key tap
+	// is often shorter than 0.1s, so reading buttons only ten times a second missed
+	// most of them (skills and the double-tap dodge appeared to do nothing).
+	local inputEnt = SpawnEntityFromTable("info_target", { targetname = "nightfall_input" });
+	inputEnt.ValidateScriptScope();
+	inputEnt.GetScriptScope().NFInput <- function()
+	{
+		try { ::NF.InputThink(); }
+		catch (e) { ::NF.ReportError("input", e); }
+		return 0.01;    // every server tick
+	}
+	AddThinkToEnt(inputEnt, "NFInput");
+}
+
+// Show each distinct script error once in chat as well as the console, so problems
+// are visible to players instead of failing silently.
+::NF.ReportError <- function(where, e)
+{
+	local msg = where + ": " + e;
+	printl("[Nightfall] error in " + msg);
+	if (msg in NF.SeenErrors) return;
+	NF.SeenErrors[msg] <- true;
+	try { ClientPrint(null, 3, "[Nightfall] script error (" + msg + ") - please report this line"); } catch (e2) {}
+}
+
+// Every server tick: only reads buttons for human players, so it stays cheap
+::NF.InputThink <- function()
+{
+	foreach (p in NF.Humans)
+	{
+		if (!NF.Valid(p) || p.IsDead()) continue;
+		NF.HandleInput(p, NF.State(p));
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -92,15 +128,17 @@
 	local now = Time();
 	NF.RunTimers();
 
+	local humans = [];
 	foreach (s in NF.Survivors())
 	{
 		local st = NF.State(s);
-		NF.HandleInput(s, st);
+		if (!IsPlayerABot(s)) humans.append(s);
 		NF.UpdateSpeed(s, st);
 		local c = NF.ClassOf(st);
 		local hook = NF.Hook(c, "Think");
 		if (hook != null && !s.IsIncapacitated()) hook(s, st);
 	}
+	NF.Humans = humans;
 
 	if (now - NF.LastSlowTick >= 1.0)
 	{
@@ -189,8 +227,7 @@
 	local b = p.GetButtonMask();
 	local pressed = b & ~st.prevButtons;
 	st.prevButtons = b;
-	if (pressed == 0 || IsPlayerABot(p)) return;
-	if (p.IsIncapacitated()) return;
+	if (pressed == 0 || p.IsIncapacitated()) return;
 
 	local walk = (b & NF.BTN.WALK) != 0;
 	local now = Time();
@@ -206,7 +243,7 @@
 
 	if (pressed & NF.BTN.DUCK)
 	{
-		if (now - st.lastDuck < 0.3) NF.TryDodge(p, st);
+		if (now - st.lastDuck < 0.4) NF.TryDodge(p, st);
 		st.lastDuck = now;
 	}
 }
@@ -260,6 +297,7 @@
 	NF.Invuln(p, shade ? 0.7 : 0.4);
 	st.dodgeReadyAt = now + (shade ? 0.7 : 1.4);
 	NF.PlayTo(p, "dodge");
+	NF.Center(p, "DODGE");
 }
 
 //-----------------------------------------------------------------------------

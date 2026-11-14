@@ -133,7 +133,7 @@
 	foreach (t in due)
 	{
 		try { t.fn(); }
-		catch (e) { printl("[Nightfall] timer error: " + e); }
+		catch (e) { NF.ReportError("timer", e); }
 	}
 }
 
