@@ -32,8 +32,9 @@
 
 ::NF.LoadAssets <- function()
 {
-	if ("NF_ASSETS" in getroottable())
-		delete ::NF_ASSETS;
+	local root = getroottable();
+	if ("NF_ASSETS" in root)
+		delete root.NF_ASSETS;
 	local found = false;
 	try { found = IncludeScript("nightfall_assets_manifest"); } catch (e) { found = false; }
 	if (!found || !("NF_ASSETS" in getroottable()))

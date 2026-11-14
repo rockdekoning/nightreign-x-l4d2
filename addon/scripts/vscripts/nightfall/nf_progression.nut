@@ -32,8 +32,8 @@
 	if (!NF.Valid(p)) return;
 	local st = NF.State(p);
 	local c = NF.ClassOf(st);
-	local base = c != null ? c.hp : 100;
-	local mx = base + (st.level - 1) * NF.HP_PER_LEVEL;
+	local baseHP = c != null ? c.hp : 100;
+	local mx = baseHP + (st.level - 1) * NF.HP_PER_LEVEL;
 	local oldMax = p.GetMaxHealth();
 	p.SetMaxHealth(mx);
 	if (!p.IsDead() && !p.IsIncapacitated())

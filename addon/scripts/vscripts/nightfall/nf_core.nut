@@ -44,25 +44,26 @@
 
 ::NF.ResetState <- function()
 {
-	NF.Players = {};
-	NF.Timers = [];
-	NF.DamageLog = [];
-	NF.Marks = {};
-	NF.Totems = [];
-	NF.Stains = [];
-	NF.Bosses = {};
-	NF.PendingElites = 0;
-	NF.PendingElitesUntil = 0.0;
-	NF.PendingBoss = null;
-	NF.NightlordPending = false;
-	NF.TideDamageActive = false;
-	NF.AbilityDamageActive = false;
-	NF.LastSlowTick = 0.0;
-	NF.LastBotTick = 0.0;
-	NF.WeaponRarity = {};
-	NF.SeenCommons = {};
-	NF.Tide = { active = false, paused = false, disabled = false, startTime = 0.0, pct = -15.0, lastTick = 0.0 };
-	NF.Raids = { r1 = false, r2 = false, boss = false };
+	// "<-" creates the slot if it does not exist yet; plain "=" would be an error.
+	NF.Players <- {};
+	NF.Timers <- [];
+	NF.DamageLog <- [];
+	NF.Marks <- {};
+	NF.Totems <- [];
+	NF.Stains <- [];
+	NF.Bosses <- {};
+	NF.PendingElites <- 0;
+	NF.PendingElitesUntil <- 0.0;
+	NF.PendingBoss <- null;
+	NF.NightlordPending <- false;
+	NF.TideDamageActive <- false;
+	NF.AbilityDamageActive <- false;
+	NF.LastSlowTick <- 0.0;
+	NF.LastBotTick <- 0.0;
+	NF.WeaponRarity <- {};
+	NF.SeenCommons <- {};
+	NF.Tide <- { active = false, paused = false, disabled = false, startTime = 0.0, pct = -15.0, lastTick = 0.0 };
+	NF.Raids <- { r1 = false, r2 = false, boss = false };
 }
 
 ::NF.StartThink <- function()
