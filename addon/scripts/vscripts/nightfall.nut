@@ -23,6 +23,8 @@ IncludeScript("nightfall/nf_core");
 ::NF.Config <- {
 	// Minutes for the Tide to sweep the whole map (it starts slightly behind the saferoom).
 	TideMinutes = 10.0
+	// The Tide never advances past this much of the map, keeping the exit saferoom safe.
+	TideMaxPercent = 90.0
 }
 
 //-----------------------------------------------------------------------------
@@ -84,7 +86,8 @@ function InterceptChat(message, speaker)
 //-----------------------------------------------------------------------------
 // Game events
 //-----------------------------------------------------------------------------
-function OnGameEvent_round_start(params)            { ::NF.After(0.5, function() { ::NF.Init(); }); }
+function OnGameEvent_round_start(params)            { ::NF.Init(); }
+function OnGameEvent_gauntlet_finale_start(params)  { ::NF.Ev_finale_start(params); }
 function OnGameEvent_player_death(params)           { ::NF.Ev_player_death(params); }
 function OnGameEvent_infected_death(params)         { ::NF.Ev_infected_death(params); }
 function OnGameEvent_witch_killed(params)           { ::NF.Ev_witch_killed(params); }

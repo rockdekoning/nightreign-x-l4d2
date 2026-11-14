@@ -17,6 +17,7 @@ provides the import operator named in the job (default "import_scene.flver").
 """
 
 import json
+import math
 import os
 import re
 import sys
@@ -216,6 +217,31 @@ def build_mapping(src_arm, overrides):
     return mapping
 
 
+def align_facing(src_arm, tgt_arm, mapping):
+    """Turn the source model about the vertical axis so it faces the same way as the L4D2
+    skeleton. Importers disagree on which axis is "forward"; left/right limbs tell us."""
+    inv = {v: k for k, v in mapping.items()}
+    for part in ("Thigh", "UpperArm", "Clavicle"):
+        tl, tr = f"{VB}L_{part}", f"{VB}R_{part}"
+        if tl in inv and tr in inv and tl in tgt_arm.data.bones and tr in tgt_arm.data.bones:
+            break
+    else:
+        log("no left/right bone pair recognised - facing left as imported")
+        return
+    sb, tb = src_arm.data.bones, tgt_arm.data.bones
+    s = (src_arm.matrix_world @ sb[inv[tr]].head_local) - (src_arm.matrix_world @ sb[inv[tl]].head_local)
+    t = (tgt_arm.matrix_world @ tb[tr].head_local) - (tgt_arm.matrix_world @ tb[tl].head_local)
+    s2, t2 = Vector((s.x, s.y)), Vector((t.x, t.y))
+    if s2.length < 1e-6 or t2.length < 1e-6:
+        return
+    angle = math.atan2(t2.y, t2.x) - math.atan2(s2.y, s2.x)
+    if abs(angle) < math.radians(1.0):
+        return
+    src_arm.matrix_world = Matrix.Rotation(angle, 4, "Z") @ src_arm.matrix_world
+    bpy.context.view_layer.update()
+    log(f"rotated source {math.degrees(angle):.0f} degrees to face the same way as the reference")
+
+
 def fit_scale_and_place(src_arm, meshes, tgt_min, tgt_max, scale_mult):
     mn, mx = world_bbox(meshes)
     src_h = mx.z - mn.z
@@ -328,10 +354,9 @@ def remap_weights(meshes, src_arm, tgt_arm, mapping, rig, rigid_bone):
             m.vertex_groups.remove(vg)
         made = {}
         for vi, acc in weights.items():
-            total = sum(acc.values())
             # Source supports at most 3 weights per vertex; keep the strongest.
             best = sorted(acc.items(), key=lambda kv: kv[1], reverse=True)[:3]
-            total = sum(w for _, w in best) or total or 1.0
+            total = sum(w for _, w in best) or 1.0
             for bone, w in best:
                 if bone not in made:
                     made[bone] = m.vertex_groups.new(name=bone)
@@ -421,6 +446,8 @@ def main():
         log("few humanoid bones recognised - falling back to 'rigid' (add a bone_map for better results)")
         rig = "rigid"
 
+    if src_arm:
+        align_facing(src_arm, tgt_arm, mapping)
     fit_scale_and_place(src_arm, meshes, tgt_min, tgt_max, float(job.get("scale", 1.0)))
     if rig == "humanoid" and src_arm:
         align_limbs(src_arm, tgt_arm, mapping)

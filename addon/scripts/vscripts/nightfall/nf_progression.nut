@@ -36,7 +36,7 @@
 	local mx = base + (st.level - 1) * NF.HP_PER_LEVEL;
 	local oldMax = p.GetMaxHealth();
 	p.SetMaxHealth(mx);
-	if (!p.IsIncapacitated())
+	if (!p.IsDead() && !p.IsIncapacitated())
 	{
 		local hp = p.GetHealth();
 		if (refill) hp = mx;
@@ -101,7 +101,7 @@
 	local st = NF.State(p);
 	if (!NF.AtGrace())
 	{
-		NF.Tell(p, "You can only level up at a \x05Site of Grace\x01 (the saferoom, before the party leaves).");
+		NF.Tell(p, "You can only level up at a {o}Site of Grace{d} (the saferoom, before the party leaves).");
 		return;
 	}
 	local gained = 0;
@@ -114,12 +114,12 @@
 	if (gained == 0)
 	{
 		if (st.level >= NF.MAX_LEVEL) NF.Tell(p, "You are at the maximum level.");
-		else NF.Tell(p, "Not enough runes. Next level costs \x05" + NF.LevelCosts[st.level] + "\x01 (you have " + st.runes + ").");
+		else NF.Tell(p, "Not enough runes. Next level costs {o}" + NF.LevelCosts[st.level] + "{d} (you have " + st.runes + ").");
 		return;
 	}
 	NF.ApplyStats(p, true);
 	st.flask = NF.MaxFlasks(st);
-	NF.Say(p.GetPlayerName() + " rests at Grace and reaches \x05level " + st.level + "\x01.");
+	NF.Say(p.GetPlayerName() + " rests at Grace and reaches {o}level " + st.level + "{d}.");
 }
 
 //-----------------------------------------------------------------------------
@@ -203,7 +203,7 @@
 	local c = NF.ClassOf(st);
 	local hook = NF.Hook(c, "OnIncap");
 	if (hook != null) hook(p, st);
-	NF.Say(p.GetPlayerName() + " has fallen! \x03Strike them\x01 (shove / melee / shoot) to rouse them.");
+	NF.Say(p.GetPlayerName() + " has fallen! {l}Strike them{d} (shove / melee / shoot) to rouse them.");
 }
 
 // Shoving a downed ally counts as a rousing blow
@@ -253,7 +253,7 @@
 		st.runes = 0;
 	}
 	if (st.level > 1) st.level--;
-	NF.Say(p.GetPlayerName() + " has perished. They lose a level" + (lost > 0 ? " and drop \x05" + lost + " runes\x01 where they fell." : "."));
+	NF.Say(p.GetPlayerName() + " has perished. They lose a level" + (lost > 0 ? " and drop {o}" + lost + " runes{d} where they fell." : "."));
 }
 
 ::NF.CheckStains <- function()
@@ -269,7 +269,7 @@
 			if ((p.GetOrigin() - s.pos).Length() < 90)
 			{
 				NF.State(p).runes += s.amount;
-				NF.Say(p.GetPlayerName() + " reclaims \x05" + s.amount + " runes\x01.");
+				NF.Say(p.GetPlayerName() + " reclaims {o}" + s.amount + " runes{d}.");
 				claimed = true;
 				break;
 			}
@@ -283,14 +283,14 @@
 // Weapon rarity
 //-----------------------------------------------------------------------------
 ::NF.Rarities <- [
-	{ name = "Worn",        mult = 1.00, color = "\x01" },
-	{ name = "Tempered",    mult = 1.10, color = "\x03" },
-	{ name = "Runed",       mult = 1.22, color = "\x05" },
-	{ name = "Nightforged", mult = 1.36, color = "\x04" },
-	{ name = "Dusk-Blessed", mult = 1.55, color = "\x04" }
+	{ name = "Worn",        mult = 1.00, color = "{d}" },
+	{ name = "Tempered",    mult = 1.10, color = "{l}" },
+	{ name = "Runed",       mult = 1.22, color = "{o}" },
+	{ name = "Nightforged", mult = 1.36, color = "{g}" },
+	{ name = "Dusk-Blessed", mult = 1.55, color = "{g}" }
 ];
 
-::NF.WeaponRarity <- {}   // entindex -> rarity index
+::NF.WeaponRarity <- {}   // entindex -> { r = rarity index, cls = weapon classname }
 
 ::NF.RollableWeapons <- {
 	weapon_smg = 1, weapon_smg_silenced = 1, weapon_smg_mp5 = 1,
@@ -341,12 +341,13 @@
 		local cls = w.GetClassname();
 		if (!(cls in NF.RollableWeapons)) continue;
 		local idx = w.GetEntityIndex();
-		if (idx in NF.WeaponRarity) continue;
+		// entity slots get reused: only trust an entry made for the same kind of weapon
+		if ((idx in NF.WeaponRarity) && NF.WeaponRarity[idx].cls == cls) continue;
 		local r = NF.RollRarity();
-		NF.WeaponRarity[idx] <- r;
+		NF.WeaponRarity[idx] <- { r = r, cls = cls };
 		local rr = NF.Rarities[r];
 		if (r >= 2)
-			NF.Tell(p, "Picked up a " + rr.color + rr.name + " " + NF.PrettyWeapon(cls) + "\x01 (+" + ((rr.mult - 1.0) * 100).tointeger() + "% damage)");
+			NF.Tell(p, "Picked up a " + rr.color + rr.name + " " + NF.PrettyWeapon(cls) + "{d} (+" + ((rr.mult - 1.0) * 100).tointeger() + "% damage)");
 	}
 }
 
@@ -357,7 +358,8 @@
 	else { try { w = attacker.GetActiveWeapon(); } catch (e) {} }
 	if (!NF.Valid(w)) return 1.0;
 	local idx = w.GetEntityIndex();
-	if (idx in NF.WeaponRarity) return NF.Rarities[NF.WeaponRarity[idx]].mult;
+	if ((idx in NF.WeaponRarity) && NF.WeaponRarity[idx].cls == w.GetClassname())
+		return NF.Rarities[NF.WeaponRarity[idx].r].mult;
 	return 1.0;
 }
 
@@ -378,8 +380,16 @@
 
 ::NF.LoadRun <- function()
 {
-	local t = {};
-	RestoreTable("nightfall_run", t);
+	// Cache what we restored: Init can run more than once per map load, and the saved
+	// table may only be readable once.
+	local root = getroottable();
+	if (!("NF_RunCache" in root))
+	{
+		local loaded = {};
+		RestoreTable("nightfall_run", loaded);
+		root.NF_RunCache <- loaded;
+	}
+	local t = root.NF_RunCache;
 	if (Director.IsFirstMapInScenario() || !("day" in t))
 	{
 		NF.Day = 1;

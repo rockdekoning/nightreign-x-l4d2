@@ -26,6 +26,7 @@
 	LastSlowTick = 0.0
 	LastBotTick = 0.0
 	World = null
+	ThinkEnt = null
 }
 
 ::NF.BTN <- {
@@ -49,11 +50,38 @@
 
 ::NF.MASK_SHOT <- 1174421515
 
-::NF.COLOR <- {
-	DEFAULT = "\x01"
-	LIGHT   = "\x03"
-	GREEN   = "\x04"
-	OLIVE   = "\x05"
+// Chat colours are written as tokens ({d} default, {l} light green, {g} green, {o} olive)
+// and swapped for the real control characters when a message is sent. Writing the raw
+// "\x04"-style escapes inline is unsafe: Squirrel reads up to four hex digits, so an
+// escape followed by a letter A-F would be misread.
+::NF.ColorTokens <- {
+	d = (1).tochar()
+	l = (3).tochar()
+	g = (4).tochar()
+	o = (5).tochar()
+}
+
+::NF.Colorize <- function(msg)
+{
+	local out = "";
+	local i = 0;
+	while (true)
+	{
+		local j = msg.find("{", i);
+		if (j == null || j + 2 >= msg.len()) break;
+		local key = msg.slice(j + 1, j + 2);
+		if (msg[j + 2] == '}' && (key in NF.ColorTokens))
+		{
+			out += msg.slice(i, j) + NF.ColorTokens[key];
+			i = j + 3;
+		}
+		else
+		{
+			out += msg.slice(i, j + 1);
+			i = j + 1;
+		}
+	}
+	return out + msg.slice(i);
 }
 
 //-----------------------------------------------------------------------------
@@ -61,13 +89,13 @@
 //-----------------------------------------------------------------------------
 ::NF.Say <- function(msg)
 {
-	ClientPrint(null, 3, "\x04[Nightfall]\x01 " + msg);
+	ClientPrint(null, 3, NF.Colorize("{g}[Nightfall]{d} " + msg));
 }
 
 ::NF.Tell <- function(p, msg)
 {
 	if (p && p.IsValid() && !IsPlayerABot(p))
-		ClientPrint(p, 3, "\x04[Nightfall]\x01 " + msg);
+		ClientPrint(p, 3, NF.Colorize("{g}[Nightfall]{d} " + msg));
 }
 
 ::NF.Center <- function(p, msg)
@@ -365,11 +393,4 @@
 	local until = Time() + dur;
 	if (until > st.invulnUntil)
 		st.invulnUntil = until;
-}
-
-::NF.Fmt1 <- function(f)
-{
-	// one decimal place without relying on %.1f support
-	local i = (f * 10).tointeger();
-	return (i / 10) + "." + (i % 10);
 }

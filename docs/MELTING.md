@@ -23,7 +23,7 @@ and still have a working game.
 | Tool | Why | Where |
 |---|---|---|
 | Python 3.10+ | runs the converter | python.org (tick "Add to PATH") |
-| Pillow *(optional)* | rebuilds normal maps properly | `pip install pillow` |
+| Pillow + NumPy *(optional)* | rebuilds normal maps properly | `pip install pillow numpy` |
 | **An unpacker that supports Nightreign** | extracts the game's encrypted archives | e.g. UXM Selective Unpack or Smithbox. Use a build that supports your game version |
 | **WitchyBND** | unpacks `.dcx` / `.bnd` / `.tpf` files | GitHub. Copy `oo2core_9_win64.dll` from your Nightreign folder next to `WitchyBND.exe` |
 | **Blender** + **Blender Source Tools** | fits the model onto the L4D2 skeleton, exports SMD | blender.org + the Blender Source Tools add-on |

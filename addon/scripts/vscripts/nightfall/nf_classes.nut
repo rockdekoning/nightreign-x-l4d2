@@ -32,12 +32,12 @@
 		{
 			if (st.secondWindUsed) return;
 			st.secondWindUsed = true;
-			NF.Tell(p, "\x05Second Wind\x01 — hold on...");
+			NF.Tell(p, "{o}Second Wind{d} — hold on...");
 			NF.After(3.0, function() {
 				if (NF.Alive(p) && p.IsIncapacitated() && !p.IsHangingFromLedge())
 				{
 					NF.Revive(p, null, 0.3);
-					NF.Say(p.GetPlayerName() + " rises on a \x05Second Wind\x01!");
+					NF.Say(p.GetPlayerName() + " rises on a {o}Second Wind{d}!");
 				}
 			});
 		}
@@ -65,7 +65,7 @@
 			local pos = p.GetOrigin();
 			NF.Invuln(p, 1.0);
 			local n = NF.AoE(p, pos, 360, 500, 300, true, NF.DMG.BLAST);
-			NF.Say(p.GetPlayerName() + " unleashes \x05Onslaught\x01! (" + n + " struck)");
+			NF.Say(p.GetPlayerName() + " unleashes {o}Onslaught{d}! (" + n + " struck)");
 			return true;
 		}
 	}
@@ -110,7 +110,7 @@
 				}
 				NF.Invuln(a, 5.0);
 			}
-			NF.Say(p.GetPlayerName() + " calls down the \x05Aegis\x01!" + (raised > 0 ? " (" + raised + " raised)" : ""));
+			NF.Say(p.GetPlayerName() + " calls down the {o}Aegis{d}!" + (raised > 0 ? " (" + raised + " raised)" : ""));
 			return true;
 		}
 	}
@@ -146,7 +146,7 @@
 			local e = tr.enthit;
 			NF.Marks[e.GetEntityIndex()] <- Time() + 10.0;
 			NF.SetGlow(e, 255, 40, 40);
-			NF.Tell(p, "Target \x05marked\x01.");
+			NF.Tell(p, "Target {o}marked{d}.");
 			return true;
 		}
 
@@ -164,7 +164,7 @@
 				n++;
 			}
 			NF.AbilityDamageActive = false;
-			NF.Say(p.GetPlayerName() + " looses a \x05Volley\x01 (" + n + " targets)");
+			NF.Say(p.GetPlayerName() + " looses a {o}Volley{d} (" + n + " targets)");
 			return true;
 		}
 	}
@@ -216,7 +216,7 @@
 			}
 			NF.AbilityDamageActive = false;
 			if (n == 0) { NF.Center(p, "Nothing to restage"); return false; }
-			NF.Tell(p, "\x05Restage\x01 echoes through " + n + " enemies.");
+			NF.Tell(p, "{o}Restage{d} echoes through " + n + " enemies.");
 			return true;
 		}
 
@@ -229,7 +229,7 @@
 				NF.SetAlpha(a, 70);
 				NF.After(6.0, function() { if (NF.Valid(a)) NF.SetAlpha(a, 255); });
 			}
-			NF.Say(p.GetPlayerName() + " draws the \x05Veil\x01.");
+			NF.Say(p.GetPlayerName() + " draws the {o}Veil{d}.");
 			return true;
 		}
 	}
@@ -278,7 +278,7 @@
 			}
 			catch (e) { prop = null; }
 			NF.Totems.append({ pos = pos, until = Time() + 12.0, ent = prop, owner = p });
-			NF.Say(p.GetPlayerName() + " plants a \x05War Totem\x01!");
+			NF.Say(p.GetPlayerName() + " plants a {o}War Totem{d}!");
 			return true;
 		}
 	}
@@ -308,7 +308,7 @@
 				if (a.IsIncapacitated()) NF.AddReviveProgress(a, 35, p);
 				else NF.Heal(a, 20);
 			}
-			NF.Tell(p, "\x05Mending Rite\x01.");
+			NF.Tell(p, "{o}Mending Rite{d}.");
 			return true;
 		}
 
@@ -316,7 +316,7 @@
 		{
 			local tr = NF.AimTrace(p, 2000);
 			local pos = tr.pos;
-			NF.Say(p.GetPlayerName() + " weaves a \x05Cataclysm\x01...");
+			NF.Say(p.GetPlayerName() + " weaves a {o}Cataclysm{d}...");
 			NF.After(1.0, function() {
 				NF.AoE(NF.Valid(p) ? p : null, pos, 400, 600, 450, true, NF.DMG.BLAST | NF.DMG.BURN);
 			});
@@ -367,14 +367,14 @@
 		Skill = function(p, st)
 		{
 			NF.AddBuff(st, "iai", 4.0);
-			NF.Tell(p, "\x05Iai Stance\x01.");
+			NF.Tell(p, "{o}Iai Stance{d}.");
 			return true;
 		}
 
 		Ult = function(p, st)
 		{
 			NF.AddBuff(st, "beast", 10.0);
-			NF.Say(p.GetPlayerName() + " is \x05Unbound\x01!");
+			NF.Say(p.GetPlayerName() + " is {o}Unbound{d}!");
 			return true;
 		}
 	}
@@ -432,7 +432,7 @@
 			if (best != null)
 			{
 				NF.Revive(best, p, 0.35);
-				NF.Say(p.GetPlayerName() + " sings a \x05Requiem\x01 — " + best.GetPlayerName() + " rises.");
+				NF.Say(p.GetPlayerName() + " sings a {o}Requiem{d} — " + best.GetPlayerName() + " rises.");
 			}
 			return true;
 		}
@@ -440,7 +440,7 @@
 		Ult = function(p, st)
 		{
 			NF.AddBuff(st, "danse", 12.0);
-			NF.Say(p.GetPlayerName() + " begins the \x05Danse Macabre\x01.");
+			NF.Say(p.GetPlayerName() + " begins the {o}Danse Macabre{d}.");
 			return true;
 		}
 	}
@@ -495,10 +495,10 @@
 	if (!quiet)
 	{
 		local c = NF.Classes[id];
-		NF.Say(p.GetPlayerName() + " walks the path of the \x05" + c.title + "\x01.");
-		NF.Tell(p, "\x03Passive\x01 " + c.passive);
-		NF.Tell(p, "\x03Skill\x01 (WALK+SHOVE) " + c.skill);
-		NF.Tell(p, "\x03Ultimate\x01 (WALK+USE) " + c.ult);
+		NF.Say(p.GetPlayerName() + " walks the path of the {o}" + c.title + "{d}.");
+		NF.Tell(p, "{l}Passive{d} " + c.passive);
+		NF.Tell(p, "{l}Skill{d} (WALK+SHOVE) " + c.skill);
+		NF.Tell(p, "{l}Ultimate{d} (WALK+USE) " + c.ult);
 	}
 }
 
@@ -528,6 +528,6 @@
 		taken[pick] <- true;
 		NF.SetClass(s, pick, IsPlayerABot(s));
 		if (!IsPlayerABot(s))
-			NF.Tell(s, "You were given the \x05" + NF.Classes[pick].title + "\x01. Type \x03!class\x01 at a Site of Grace to change.");
+			NF.Tell(s, "You were given the {o}" + NF.Classes[pick].title + "{d}. Type {l}!class{d} at a Site of Grace to change.");
 	}
 }

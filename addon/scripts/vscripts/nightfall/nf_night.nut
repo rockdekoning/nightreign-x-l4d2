@@ -7,17 +7,7 @@
 // Anyone caught behind it burns. Linear campaigns, same pressure.
 //=============================================================================
 
-::NF.Tide <- {
-	active = false
-	paused = false
-	disabled = false
-	startTime = 0.0
-	pct = -15.0
-	lastTick = 0.0
-	warned = {}
-}
-
-::NF.Raids <- { r1 = false, r2 = false, boss = false }
+// NF.Tide and NF.Raids are created by NF.ResetState (nf_core.nut).
 
 // Each night rolls one Omen
 ::NF.Omens <- [
@@ -78,11 +68,29 @@
 	local o = NF.Omens[RandomInt(0, NF.Omens.len() - 1)];
 	if (NF.Day == 1 && o.id == "bloodmoon") o = NF.Omens[0]; // be gentle on night one
 	NF.Omen = o;
-	if ("options" in o)
+	try
 	{
-		foreach (k, v in o.options)
-			SessionOptions[k] <- v;
+		// Undo the previous omen's director changes first (a restart rolls a new omen)
+		local root = getroottable();
+		if ("NF_OmenRestore" in root)
+		{
+			foreach (k, v in root.NF_OmenRestore)
+			{
+				if (v == null) { if (k in SessionOptions) delete SessionOptions[k]; }
+				else SessionOptions[k] <- v;
+			}
+		}
+		root.NF_OmenRestore <- {};
+		if ("options" in o)
+		{
+			foreach (k, v in o.options)
+			{
+				root.NF_OmenRestore[k] <- (k in SessionOptions) ? SessionOptions[k] : null;
+				SessionOptions[k] <- v;
+			}
+		}
 	}
+	catch (e) { printl("[Nightfall] could not apply omen options: " + e); }
 }
 
 //-----------------------------------------------------------------------------
@@ -99,7 +107,10 @@
 
 ::NF.SurvivorFlow <- function(p)
 {
-	return GetFlowPercentForPosition(p.GetOrigin(), false);
+	// The per-player version follows the last nav area the player stood on, so standing on
+	// a prop or jumping does not read as "0% progress".
+	try { return GetCurrentFlowPercentForPlayer(p); }
+	catch (e) { return GetFlowPercentForPosition(p.GetOrigin(), false); }
 }
 
 ::NF.UpdateTide <- function()
@@ -113,7 +124,7 @@
 			T.active = true;
 			T.startTime = Time();
 			T.lastTick = Time();
-			NF.Say("The \x05Tide\x01 begins to rise behind you. Keep moving.");
+			NF.Say("The {o}Tide{d} begins to rise behind you. Keep moving.");
 		}
 		return;
 	}
@@ -125,7 +136,8 @@
 	T.lastTick = now;
 
 	T.pct += NF.TideRate() * dt;
-	if (T.pct > 100.0) T.pct = 100.0;
+	// Stop short of the end so the exit saferoom is never inside the Tide
+	if (T.pct > NF.Config.TideMaxPercent) T.pct = NF.Config.TideMaxPercent;
 
 	foreach (s in NF.Survivors())
 	{
@@ -169,9 +181,20 @@
 
 ::NF.SpawnElite <- function()
 {
-	local t = RandomInt(1, 6);
+	local ok = false;
+	try { ok = ZSpawn({ type = RandomInt(1, 6) }); } catch (e) { ok = false; }
+	if (!ok) return;
 	NF.PendingElites++;
-	try { ZSpawn({ type = t }); } catch (e) { NF.PendingElites--; }
+	// If the spawn never shows up, don't promote some unrelated special minutes later
+	NF.PendingElitesUntil = Time() + 10.0;
+}
+
+// Call in a horde. ZSpawn type 10 is a mob; the Director call is a fallback.
+::NF.Horde <- function()
+{
+	local ok = false;
+	try { ok = ZSpawn({ type = 10 }); } catch (e) { ok = false; }
+	if (!ok) { try { Director.ForcePanicEvent(); } catch (e) {} }
 }
 
 ::NF.CheckRaids <- function()
@@ -181,9 +204,9 @@
 	if (!NF.Raids.r1 && lead >= 33)
 	{
 		NF.Raids.r1 = true;
-		NF.Say("\x05Night Raid!\x01 An elite hunts the party — slay it for a bounty.");
+		NF.Say("{o}Night Raid!{d} An elite hunts the party — slay it for a bounty.");
 		NF.SpawnElite();
-		try { Director.ForcePanicEvent(); } catch (e) {}
+		NF.Horde();
 	}
 	if (!NF.Raids.boss && lead >= 55)
 	{
@@ -192,13 +215,15 @@
 		if (RandomInt(1, 100) <= chance && !NF.AnyTankAlive())
 		{
 			NF.PendingBoss = { kind = "field", name = NF.FieldBossNames[RandomInt(0, NF.FieldBossNames.len() - 1)] };
-			try { ZSpawn({ type = 8 }); } catch (e) { NF.PendingBoss = null; }
+			local ok = false;
+			try { ok = ZSpawn({ type = 8 }); } catch (e) { ok = false; }
+			if (!ok) NF.PendingBoss = null;
 		}
 	}
 	if (!NF.Raids.r2 && lead >= 70)
 	{
 		NF.Raids.r2 = true;
-		NF.Say("\x05Night Raid!\x01 Two elites close in.");
+		NF.Say("{o}Night Raid!{d} Two elites close in.");
 		NF.SpawnElite();
 		NF.SpawnElite();
 	}
@@ -218,6 +243,7 @@
 {
 	local zt = p.GetZombieType();
 	if (zt == 8) return; // handled by tank_spawn
+	if (NF.PendingElites > 0 && Time() > NF.PendingElitesUntil) NF.PendingElites = 0;
 	if (NF.PendingElites <= 0)
 	{
 		NF.After(0.1, function() { if (NF.Alive(p)) NF.ApplySpecialModel(p, false); });
@@ -272,12 +298,12 @@
 		{
 			NF.SetGlow(p, 170, 60, 255);
 			NF.CenterAll("NIGHTLORD: " + name.toupper());
-			NF.Say("\x04" + name + "\x01 descends. End the night.");
+			NF.Say("{g}" + name + "{d} descends. End the night.");
 		}
 		else if (kind == "field")
 		{
 			NF.SetGlow(p, 255, 120, 0);
-			NF.Say("Field Boss: \x05" + name + "\x01 blocks the road. Bounty for the whole party.");
+			NF.Say("Field Boss: {o}" + name + "{d} blocks the road. Bounty for the whole party.");
 		}
 	});
 }
@@ -294,8 +320,8 @@
 			b.phase = 2;
 			NetProps.SetPropFloat(e, "m_flLaggedMovementValue", 1.2);
 			NF.CenterAll(b.name.toupper() + " IS ENRAGED");
-			NF.Say("\x04" + b.name + "\x01 enters its second phase! The night itself answers its call.");
-			try { Director.ForcePanicEvent(); } catch (err) {}
+			NF.Say("{g}" + b.name + "{d} enters its second phase! The night itself answers its call.");
+			NF.Horde();
 			NF.SpawnElite();
 		}
 	}
@@ -306,7 +332,7 @@
 {
 	NF.Tide.paused = true;
 	NF.NightlordPending = true;
-	NF.Say("The Tide stills. Something vast stirs in the dark... \x04the Nightlord comes\x01.");
+	NF.Say("The Tide stills. Something vast stirs in the dark... {g}the Nightlord comes{d}.");
 }
 
 //-----------------------------------------------------------------------------
@@ -345,7 +371,7 @@
 		if (NF.IsTank(victim))
 		{
 			NF.GiveRunesAll(NF.RuneValues.tank);
-			NF.Say("Tank slain. \x05+" + NF.RuneValues.tank + " runes\x01 to every survivor.");
+			NF.Say("Tank slain. {o}+" + NF.RuneValues.tank + " runes{d} to every survivor.");
 		}
 		return;
 	}
@@ -355,18 +381,18 @@
 	{
 		case "elite":
 			if (NF.IsSurvivor(killer)) NF.GiveRunes(killer, NF.RuneValues.elite);
-			NF.Say("Elite slain! \x05+" + NF.RuneValues.elite + " runes\x01" + (NF.IsSurvivor(killer) ? " to " + killer.GetPlayerName() : "") + ".");
+			NF.Say("Elite slain! {o}+" + NF.RuneValues.elite + " runes{d}" + (NF.IsSurvivor(killer) ? " to " + killer.GetPlayerName() : "") + ".");
 			break;
 		case "field":
 			NF.GiveRunesAll(NF.RuneValues.fieldboss);
-			NF.Say("\x05" + b.name + "\x01 falls. \x05+" + NF.RuneValues.fieldboss + " runes\x01 to every survivor.");
+			NF.Say("{o}" + b.name + "{d} falls. {o}+" + NF.RuneValues.fieldboss + " runes{d} to every survivor.");
 			break;
 		case "nightlord":
 			NF.CenterAll("NIGHTLORD VANQUISHED");
-			NF.Say("\x04" + b.name + "\x01 is vanquished. Dawn is within reach — reach the rescue!");
+			NF.Say("{g}" + b.name + "{d} is vanquished. Dawn is within reach — reach the rescue!");
 			break;
 		default:
 			NF.GiveRunesAll(NF.RuneValues.tank);
-			NF.Say("Tank slain. \x05+" + NF.RuneValues.tank + " runes\x01 to every survivor.");
+			NF.Say("Tank slain. {o}+" + NF.RuneValues.tank + " runes{d} to every survivor.");
 	}
 }

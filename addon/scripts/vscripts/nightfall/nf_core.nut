@@ -2,9 +2,12 @@
 // Nightfall — Core loop: init, input, damage pipeline, chat, events, bot AI
 //=============================================================================
 
+// Safe to call more than once: it only (re)starts when the think entity is gone,
+// which is what happens after a round restart wipes the map's entities.
 ::NF.Init <- function()
 {
-	if (NF.Initialized) return;
+	if (NF.Initialized && NF.Valid(NF.ThinkEnt)) return;
+	NF.ResetState();
 	NF.Initialized = true;
 
 	NF.World = Entities.FindByClassname(null, "worldspawn");
@@ -25,6 +28,7 @@
 			st.flask = NF.MaxFlasks(st);
 			st.downs = 0;
 			st.secondWindUsed = false;
+			if (IsPlayerABot(s)) NF.LevelUp(s);
 			NF.ApplyStats(s, true);
 			NF.RollInventory(s);
 		}
@@ -33,14 +37,38 @@
 	});
 
 	NF.After(3.0, function() {
-		NF.Say("Nightfall v" + NF.Version + " — \x05Night " + NF.Day + "\x01. Omen: \x05" + NF.Omen.name + "\x01 — " + NF.Omen.desc);
-		NF.Say("Type \x03!nfhelp\x01 for controls. Spend runes with \x03!levelup\x01 before leaving the saferoom.");
+		NF.Say("Nightfall v" + NF.Version + " — {o}Night " + NF.Day + "{d}. Omen: {o}" + NF.Omen.name + "{d} — " + NF.Omen.desc);
+		NF.Say("Type {l}!nfhelp{d} for controls. Spend runes with {l}!levelup{d} before leaving the saferoom.");
 	});
+}
+
+::NF.ResetState <- function()
+{
+	NF.Players = {};
+	NF.Timers = [];
+	NF.DamageLog = [];
+	NF.Marks = {};
+	NF.Totems = [];
+	NF.Stains = [];
+	NF.Bosses = {};
+	NF.PendingElites = 0;
+	NF.PendingElitesUntil = 0.0;
+	NF.PendingBoss = null;
+	NF.NightlordPending = false;
+	NF.TideDamageActive = false;
+	NF.AbilityDamageActive = false;
+	NF.LastSlowTick = 0.0;
+	NF.LastBotTick = 0.0;
+	NF.WeaponRarity = {};
+	NF.SeenCommons = {};
+	NF.Tide = { active = false, paused = false, disabled = false, startTime = 0.0, pct = -15.0, lastTick = 0.0 };
+	NF.Raids = { r1 = false, r2 = false, boss = false };
 }
 
 ::NF.StartThink <- function()
 {
 	local ent = SpawnEntityFromTable("info_target", { targetname = "nightfall_think" });
+	NF.ThinkEnt = ent;
 	ent.ValidateScriptScope();
 	local scope = ent.GetScriptScope();
 	scope.NFThink <- function()
@@ -234,7 +262,7 @@
 		// Striking a downed ally rouses them instead of hurting them
 		if (NF.IsSurvivor(attacker) && attacker != victim)
 		{
-			if (victim.IsIncapacitated())
+			if (victim.IsIncapacitated() && !(dt.DamageType & NF.DMG.BURN))
 			{
 				local amt = dt.DamageDone * 2.0;
 				if (amt < 10) amt = 10;
@@ -305,14 +333,14 @@
 	{
 		case "nfhelp":
 		case "help":
-			NF.Tell(speaker, "\x03WALK+SHOVE\x01 skill | \x03WALK+USE\x01 ultimate | \x03WALK+RELOAD\x01 flask | \x03double-tap CROUCH\x01 dodge");
-			NF.Tell(speaker, "\x03Shove / hit a downed ally\x01 to rouse them. Outrun the \x05Tide\x01. Kill to earn runes.");
+			NF.Tell(speaker, "{l}WALK+SHOVE{d} skill | {l}WALK+USE{d} ultimate | {l}WALK+RELOAD{d} flask | {l}double-tap CROUCH{d} dodge");
+			NF.Tell(speaker, "{l}Shove / hit a downed ally{d} to rouse them. Outrun the {o}Tide{d}. Kill to earn runes.");
 			NF.Tell(speaker, "Commands: !class [name], !classes, !levelup, !stats, !skill, !ult, !flask");
 			return false;
 
 		case "classes":
 			foreach (id in NF.ClassOrder)
-				NF.Tell(speaker, "\x05" + NF.Classes[id].title + "\x01 — " + NF.Classes[id].role);
+				NF.Tell(speaker, "{o}" + NF.Classes[id].title + "{d} — " + NF.Classes[id].role);
 			return false;
 
 		case "class":
@@ -321,22 +349,24 @@
 				local c = NF.ClassOf(st);
 				if (c != null)
 				{
-					NF.Tell(speaker, "You are the \x05" + c.title + "\x01. " + c.role);
-					NF.Tell(speaker, "\x03Passive\x01 " + c.passive);
-					NF.Tell(speaker, "\x03Skill\x01 " + c.skill);
-					NF.Tell(speaker, "\x03Ultimate\x01 " + c.ult);
+					NF.Tell(speaker, "You are the {o}" + c.title + "{d}. " + c.role);
+					NF.Tell(speaker, "{l}Passive{d} " + c.passive);
+					NF.Tell(speaker, "{l}Skill{d} " + c.skill);
+					NF.Tell(speaker, "{l}Ultimate{d} " + c.ult);
 				}
-				NF.Tell(speaker, "Change with \x03!class <name>\x01 at a Site of Grace. See \x03!classes\x01.");
+				NF.Tell(speaker, "Change with {l}!class <name>{d} at a Site of Grace. See {l}!classes{d}.");
 				return false;
 			}
 			if (!NF.AtGrace())
 			{
-				NF.Tell(speaker, "You can only change class at a \x05Site of Grace\x01.");
+				NF.Tell(speaker, "You can only change class at a {o}Site of Grace{d}.");
 				return false;
 			}
-			local id = NF.FindClass(args[1]);
-			if (id == null) { NF.Tell(speaker, "Unknown class. See \x03!classes\x01."); return false; }
-			NF.SetClass(speaker, id, false);
+			{
+				local id = NF.FindClass(args[1]);
+				if (id == null) { NF.Tell(speaker, "Unknown class. See {l}!classes{d}."); return false; }
+				NF.SetClass(speaker, id, false);
+			}
 			return false;
 
 		case "levelup":
@@ -345,8 +375,10 @@
 			return false;
 
 		case "stats":
-			local next = st.level < NF.MAX_LEVEL ? NF.LevelCosts[st.level].tostring() : "max";
-			NF.Tell(speaker, "Level \x05" + st.level + "\x01 | Runes \x05" + st.runes + "\x01 (next: " + next + ") | Damage +" + ((st.level - 1) * 4) + "% | Flasks " + st.flask + "/" + NF.MaxFlasks(st));
+			{
+				local next = st.level < NF.MAX_LEVEL ? NF.LevelCosts[st.level].tostring() : "max";
+				NF.Tell(speaker, "Level {o}" + st.level + "{d} | Runes {o}" + st.runes + "{d} (next: " + next + ") | Damage +" + ((st.level - 1) * 4) + "% | Flasks " + st.flask + "/" + NF.MaxFlasks(st));
+			}
 			return false;
 
 		case "skill": NF.TrySkill(speaker, st); return false;
@@ -357,9 +389,9 @@
 			if (args.len() >= 2 && (args[1] == "off" || args[1] == "on"))
 			{
 				NF.Tide.disabled = args[1] == "off";
-				NF.Say("The Tide has been turned \x05" + args[1] + "\x01 by " + speaker.GetPlayerName() + ".");
+				NF.Say("The Tide has been turned {o}" + args[1] + "{d} by " + speaker.GetPlayerName() + ".");
 			}
-			else NF.Tell(speaker, "Tide: " + (NF.Tide.disabled ? "off" : NF.Tide.pct.tointeger() + "%") + ". Use !tide on|off.");
+			else NF.Tell(speaker, "Tide: " + (NF.Tide.disabled ? "off" : (NF.Tide.pct < 0 ? 0 : NF.Tide.pct.tointeger()) + "%") + ". Use !tide on|off.");
 			return false;
 	}
 	return true;
@@ -438,7 +470,7 @@
 	local killer = (("userid" in params) && params.userid != 0) ? GetPlayerFromUserID(params.userid) : null;
 	NF.OnKill(killer, null, "witch");
 	if (NF.IsSurvivor(killer))
-		NF.Say(killer.GetPlayerName() + " slays a Witch. \x05+" + NF.RuneValues.witch + " runes\x01.");
+		NF.Say(killer.GetPlayerName() + " slays a Witch. {o}+" + NF.RuneValues.witch + " runes{d}.");
 }
 
 ::NF.Ev_player_incapacitated <- function(params)
@@ -490,7 +522,7 @@
 
 ::NF.Ev_finale_start <- function(params)
 {
-	NF.OnFinaleStart();
+	if (!NF.Tide.paused) NF.OnFinaleStart();
 }
 
 ::NF.Ev_map_transition <- function(params)
@@ -500,7 +532,7 @@
 
 ::NF.Ev_finale_vehicle_leaving <- function(params)
 {
-	NF.Say("\x04Dawn breaks.\x01 The expedition survives the Long Night.");
+	NF.Say("{g}Dawn breaks.{d} The expedition survives the Long Night.");
 }
 
 ::NF.Ev_witch_spawn <- function(params)
@@ -508,3 +540,7 @@
 	local w = ("witchid" in params) ? EntIndexToHScript(params.witchid) : null;
 	if (NF.Valid(w)) NF.After(0.1, function() { if (NF.Valid(w)) NF.ApplyWitchModel(w); });
 }
+
+// Give every piece of run state a value as soon as the scripts load, so callbacks that
+// fire before Init (early spawns, chat) never touch a missing slot.
+::NF.ResetState();

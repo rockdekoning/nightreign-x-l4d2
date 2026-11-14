@@ -124,7 +124,7 @@ tools/
 └── melt_config.example.json               # tool paths (copy to melt_config.json)
 ```
 
-Tuning: `NF.Config.TideMinutes` in `nightfall.nut`. Class numbers live in each class table in
+Tuning: `NF.Config.TideMinutes` and `TideMaxPercent` in `nightfall.nut`. Class numbers live in each class table in
 `nf_classes.nut`. Rune values and level costs are at the top of `nf_progression.nut`.
 
 ## Status / known caveats

@@ -202,8 +202,11 @@ def cmd_scan(_args: list[str]) -> None:
 # --------------------------------------------------------------------------------------
 def run(cmd: list[str], cwd: Path | None = None, what: str = "") -> subprocess.CompletedProcess:
     say(f"  $ {' '.join(str(c) for c in cmd)}")
-    proc = subprocess.run([str(c) for c in cmd], cwd=str(cwd) if cwd else None,
-                          capture_output=True, text=True, errors="replace")
+    try:
+        proc = subprocess.run([str(c) for c in cmd], cwd=str(cwd) if cwd else None,
+                              capture_output=True, text=True, errors="replace")
+    except OSError as e:
+        raise MeltError(f"could not start {what or cmd[0]}: {e}. Run 'python tools/melt.py check'.") from e
     WORK.mkdir(parents=True, exist_ok=True)
     with open(WORK / "melt.log", "a", encoding="utf-8") as log:
         log.write(f"\n$ {' '.join(str(c) for c in cmd)}\n{proc.stdout}{proc.stderr}\n[exit {proc.returncode}]\n")
@@ -303,22 +306,24 @@ def pick_textures(images: list[str], dds_index: dict[str, Path], original: str) 
 def rebuild_normal(tga: Path, flip_green: bool) -> None:
     """FromSoftware normal maps are two-channel (BC5); Source wants a full RGB normal."""
     try:
-        from PIL import Image  # type: ignore
+        from PIL import Image, ImageChops  # type: ignore
     except ImportError:
-        say("    (Pillow not installed - normal map blue channel not rebuilt; pip install pillow)")
+        say("    (Pillow not installed - normal map left as-is; pip install pillow)")
         return
     img = Image.open(tga).convert("RGB")
-    px = img.load()
-    w, h = img.size
-    for y in range(h):
-        for x in range(w):
-            r, g, _ = px[x, y]
-            nx, ny = r / 127.5 - 1.0, g / 127.5 - 1.0
-            nz = max(0.0, 1.0 - nx * nx - ny * ny) ** 0.5
-            if flip_green:
-                g = 255 - g
-            px[x, y] = (r, g, int((nz * 0.5 + 0.5) * 255))
-    img.save(tga)
+    r, g, _ = img.split()
+    try:
+        import numpy as np  # type: ignore
+        nx = np.asarray(r, dtype=np.float32) / 127.5 - 1.0
+        ny = np.asarray(g, dtype=np.float32) / 127.5 - 1.0
+        nz = np.sqrt(np.clip(1.0 - nx * nx - ny * ny, 0.0, 1.0))
+        b = Image.fromarray(((nz * 0.5 + 0.5) * 255).astype(np.uint8), "L")
+    except ImportError:
+        # Without numpy, a flat "pointing straight out" blue channel is a close approximation.
+        b = Image.new("L", img.size, 255)
+    if flip_green:
+        g = ImageChops.invert(g)
+    Image.merge("RGB", (r, g, b)).save(tga)
 
 
 def convert_texture(cfg: dict, dds: Path, out_dir: Path, out_stem: str, normal: bool) -> None:
@@ -332,8 +337,9 @@ def convert_texture(cfg: dict, dds: Path, out_dir: Path, out_stem: str, normal: 
         rebuild_normal(tga, bool(cfg.get("flip_normal_green", False)))
     final_tga = tmp / (out_stem + ".tga")
     shutil.move(str(tga), final_tga)
-    fmt = "dxt5" if not normal else "rgba8888"
-    run([cfg["vtfcmd"], "-file", final_tga, "-output", out_dir, "-format", fmt, "-alphaformat", "dxt5"], what="VTFCmd")
+    # Normal maps stay uncompressed: DXT compression makes lighting look blocky.
+    fmt, alpha_fmt = ("bgr888", "bgra8888") if normal else ("dxt1", "dxt5")
+    run([cfg["vtfcmd"], "-file", final_tga, "-output", out_dir, "-format", fmt, "-alphaformat", alpha_fmt], what="VTFCmd")
 
 
 def write_vmt(path: Path, base: str | None, bump: str | None, original: str) -> None:
@@ -437,7 +443,8 @@ def build_role(cfg: dict, role: str, spec: dict, staging: Path) -> str:
 
     # 4. textures + materials
     materials = load_json(blend_dir / "materials.json")
-    dds_index = {p.stem.lower(): p for p in src_dir.rglob("*.dds")}
+    tex_dirs = [src_dir] + sorted({p.parent for p in model_files if src_dir not in p.parents})
+    dds_index = {p.stem.lower(): p for d in tex_dirs for p in d.rglob("*.dds")}
     mat_rel = f"models/{MODEL_DIR}/{role}"
     mat_out = staging / "materials" / mat_rel
     mat_out.mkdir(parents=True, exist_ok=True)
@@ -544,6 +551,10 @@ def pack_vpk(cfg: dict, folder: Path, name: str) -> Path:
 
 def cmd_build(args: list[str]) -> None:
     cfg = load_config()
+    tp = tool_paths(cfg)
+    for need in ("vpk", "addons"):
+        if not tp[need].exists():
+            raise MeltError(f"{tp[need]} not found - check 'l4d2_dir' in tools/melt_config.json")
     roles = load_json(ASSETS_PATH)["roles"]
     jobs = expand_roles(roles)
     if args:
@@ -573,8 +584,9 @@ def cmd_build(args: list[str]) -> None:
             else:
                 built[role] = path
             results.append((role, "OK", path))
-        except MeltError as e:
-            results.append((role, "FAILED", str(e).splitlines()[0]))
+        except (MeltError, OSError, ValueError, KeyError) as e:
+            first_line = (str(e).splitlines() or [type(e).__name__])[0]
+            results.append((role, "FAILED", first_line))
             say(f"  FAILED: {e}")
 
     WORK.mkdir(exist_ok=True)
@@ -582,7 +594,6 @@ def cmd_build(args: list[str]) -> None:
     write_manifest(staging, built)
     write_asset_addoninfo(staging)
 
-    tp = tool_paths(cfg)
     installed = []
     if built:
         installed.append(pack_vpk(cfg, staging, ASSET_ADDON_NAME))
