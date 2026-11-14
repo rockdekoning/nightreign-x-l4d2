@@ -21,16 +21,20 @@ The mashup has two halves:
 
 ## Install & play
 
-**One click (recommended):** set up the tools in [docs/MELTING.md](docs/MELTING.md), then run
-`MELT.bat`. It converts your Nightreign assets and installs both addons. Even with no models
-selected yet, it still packs and installs the mod.
+**New here? Follow [HOW_TO_PLAY.md](HOW_TO_PLAY.md).** It's the step-by-step guide.
 
-**Mod only (vanilla models):**
+**Just the mod (vanilla L4D2 models):** download the repo as a ZIP, extract it, and
+double-click **`INSTALL_MOD.bat`**. It finds Left 4 Dead 2, packs the mod and installs it. No
+other tools are needed.
 
-1. Copy the `addon/` folder into your game as
-   `Left 4 Dead 2/left4dead2/addons/nightfall/`
-   *(or pack it into a VPK: drag the folder onto `Left 4 Dead 2/bin/vpk.exe`, rename the
-   result to `nightfall.vpk` and drop it in `left4dead2/addons/`)*.
+**With Nightreign models:** set up the tools in [docs/MELTING.md](docs/MELTING.md), then run
+`MELT.bat`. It converts your Nightreign assets and installs both addons.
+
+**By hand:**
+
+1. Drag the `addon` folder onto `Left 4 Dead 2/bin/vpk.exe`. Rename the `addon.vpk` it creates
+   to `nightfall.vpk` and move it into `Left 4 Dead 2/left4dead2/addons/`. (L4D2 only loads
+   packed `.vpk` addons, so copying the loose folder into `addons` doesn't work.)
 2. Launch L4D2 with the developer console enabled, then run:
 
    ```
@@ -115,6 +119,8 @@ addon/
         ├── nf_assets.nut                  # detects the melted asset pack and swaps models
         └── nf_core.nut                    # think loop, input, damage pipeline, chat, bot AI
 
+INSTALL_MOD.bat                            # one-click: install just the mod
+HOW_TO_PLAY.md                             # simple install and play guide
 MELT.bat                                   # one-click: check tools, convert, install
 docs/MELTING.md                            # setup guide for the asset converter
 tools/
